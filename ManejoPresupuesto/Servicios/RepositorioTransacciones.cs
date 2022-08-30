@@ -9,6 +9,7 @@ namespace ManejoPresupuesto.Servicios
         Task Actualizar(Transaccion transaccion, decimal montoAnterior, int cuentaAnteriorId);
         Task Borrar(int id);
         Task Crear(Transaccion transaccion);
+        Task<IEnumerable<Transaccion>> ObtenerPorCuentaId(ObtenerTransaccionesPorCuenta modelo);
         Task<Transaccion> ObtenerPorId(int id, int usuarioId);
     }
 
@@ -33,6 +34,21 @@ namespace ManejoPresupuesto.Servicios
                                                                     transaccion.Nota },
                                                             commandType: System.Data.CommandType.StoredProcedure);
             transaccion.Id = id;
+        }
+
+        public async Task<IEnumerable<Transaccion>> ObtenerPorCuentaId(ObtenerTransaccionesPorCuenta modelo)
+        {
+            using var connection = new SqlConnection(connectionString);
+            return await connection.QueryAsync<Transaccion>(@"SELECT Transacciones.Id, Transacciones.Monto, Transacciones.FechaTransaccion,
+                                                                Categorias.Nombre as Categoria, Cuentas.Nombre as Cuenta, Categorias.TipoOperacionId
+                                                                FROM Transacciones
+                                                                INNER JOIN Categorias
+                                                                ON Categorias.Id = Transacciones.CategoriaId
+                                                                INNER JOIN Cuentas
+                                                                ON Cuentas.Id = Transacciones.CuentaId
+                                                                WHERE Transacciones.CuentaId = @CuentaId
+                                                                AND Transacciones.UsuarioId = @UsuarioId
+                                                                AND FechaTransaccion BETWEEN @FechaInicio AND @FechaFin", modelo);
         }
 
         public async Task Actualizar(Transaccion transaccion, decimal montoAnterior, int cuentaAnteriorId) 
